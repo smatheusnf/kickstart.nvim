@@ -969,6 +969,28 @@ require('lazy').setup({
     --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
   },
 
+  -- Adicione isso na lista de plugins do seu init.lua
+  {
+    'sphamba/smear-cursor.nvim',
+    enabled = not vim.g.neovide,
+    opts = {
+      -- A cor exata: um branco levemente acinzentado que dá o efeito de rastro de luz
+      cursor_color = '#d3dae3',
+
+      -- Configuração de Física (O segredo da fluidez dele)
+      stiffness = 0.6, -- Menos rígido = mais "gelatina"
+      trailing_stiffness = 0.3, -- Faz a cauda demorar a sumir
+      distance_stop_animating = 0.1,
+
+      -- Isso aqui esconde o cursor "quadrado" original do Neovim
+      -- É o que faz parecer uma animação de curso profissional
+      trailing_exponent = 5.0, -- Aumentei para 5.0; isso deixa a cauda fina e "afiada"
+      hide_target_hack = true, -- Esconde o cursor "blocado" original do Neovim
+
+      legacy_computing_symbols_support = true, -- Melhora a renderização no Windows/Mac
+    },
+  },
+
   { -- ADICIONADO: Interface do LazyGit
     'kdheepak/lazygit.nvim',
     lazy = true,
@@ -1034,6 +1056,13 @@ require('lazy').setup({
     },
   },
 })
+
+-- Seta para Direita: Próxima Aba
+vim.keymap.set('n', '<Right>', 'gt', { desc = 'Próxima Aba' })
+
+-- Seta para Esquerda: Aba Anterior
+vim.keymap.set('n', '<Left>', 'gT', { desc = 'Aba Anterior' })
+
 -- Atalho para Compilar e Rodar C99 (F5)
 vim.keymap.set('n', '<F5>', function()
   vim.cmd 'write'
@@ -1051,5 +1080,33 @@ vim.api.nvim_create_autocmd({ 'FocusLost', 'BufLeave' }, {
   pattern = { '*' },
   command = 'silent! wall',
 })
+-- [[ CONFIGURAÇÃO CLEAN E ELÁSTICA (SÓ RASTRO DE LUZ) ]]
+if vim.g.neovide then
+  -- 1. FONTE E ZOOM
+  vim.o.guifont = 'JetBrainsMono_Nerd_Font:h11'
+  vim.g.neovide_scale_factor = 1.0
+
+  -- Atalhos de Zoom (Ctrl + e Ctrl -)
+  vim.keymap.set('n', '<C-=>', function()
+    vim.g.neovide_scale_factor = vim.g.neovide_scale_factor * 1.1
+  end)
+  vim.keymap.set('n', '<C-->', function()
+    vim.g.neovide_scale_factor = vim.g.neovide_scale_factor * 0.9
+  end)
+
+  -- 2. O RASTRO DE LUZ (Sem fumaça/partículas)
+  -- Deixando o vfx_mode vazio, o Neovide usa apenas o rastro elástico nativo
+  vim.g.neovide_cursor_vfx_mode = ''
+  vim.g.neovide_cursor_animation_length = 0.13 -- Um pouco mais lento para você ver a "luz"
+  vim.g.neovide_cursor_trail_size = 0.8 -- Tamanho do rastro de luz
+  vim.g.neovide_cursor_antialiasing = true
+
+  -- 3. MOVIMENTO DA TELA
+  vim.g.neovide_scroll_animation_length = 0.3
+
+  -- 4. ESTÉTICA
+  vim.g.neovide_floating_blur_amount_x = 2.0
+  vim.g.neovide_floating_blur_amount_y = 2.0
+end
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
