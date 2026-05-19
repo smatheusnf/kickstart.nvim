@@ -686,7 +686,8 @@ require('lazy').setup({
       local servers = {
         -- clangd = {},
         -- gopls = {},
-        -- pyright = {},
+        ruff = {},
+        pyright = {},
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
@@ -731,6 +732,7 @@ require('lazy').setup({
         'stylua', -- Used to format Lua code
         'clang-format',
         'ruff',
+        'pyright',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -776,13 +778,14 @@ require('lazy').setup({
         python = { 'ruff_format' },
       },
       format_on_save = {
-        timeout_ms = 500,
+        timeout_ms = 2000,
         lsp_fallback = true,
       },
     },
   },
 
-  { -- Autocompletion
+  -- Autocompletion
+  {
     'saghen/blink.cmp',
     event = 'VimEnter',
     version = '1.*',
@@ -794,67 +797,55 @@ require('lazy').setup({
         build = (function()
           -- Build Step is needed for regex support in snippets.
           -- This step is not supported in many windows environments.
-          -- Remove the below condition to re-enable on windows.
           if vim.fn.has 'win32' == 1 or vim.fn.executable 'make' == 0 then
             return
           end
           return 'make install_jsregexp'
         end)(),
         dependencies = {
-          -- `friendly-snippets` contains a variety of premade snippets.
-          --    See the README about individual language/framework/plugin snippets:
-          --    https://github.com/rafamadriz/friendly-snippets
-          -- {
-          --   'rafamadriz/friendly-snippets',
-          --   config = function()
-          --     require('luasnip.loaders.from_vscode').lazy_load()
-          --   end,
-          -- },
+          -- Ativando os snippets prontos para Python e C
+          {
+            'rafamadriz/friendly-snippets',
+            config = function()
+              require('luasnip.loaders.from_vscode').lazy_load()
+            end,
+          },
         },
         opts = {},
       },
       'folke/lazydev.nvim',
     },
+
     --- @module 'blink.cmp'
     --- @type blink.cmp.Config
     opts = {
       keymap = {
-        -- 'default' (recommended) for mappings similar to built-in completions
-        --   <c-y> to accept ([y]es) the completion.
-        --    This will auto-import if your LSP supports it.
-        --    This will expand snippets if the LSP sent a snippet.
-        -- 'super-tab' for tab to accept
-        -- 'enter' for enter to accept
-        -- 'none' for no mappings
-        --
-        -- For an understanding of why the 'default' preset is recommended,
-        -- you will need to read `:help ins-completion`
-        --
-        -- No, but seriously. Please read `:help ins-completion`, it is really good!
-        --
-        -- All presets have the following mappings:
-        -- <tab>/<s-tab>: move to right/left of your snippet expansion
-        -- <c-space>: Open menu or open docs if already open
-        -- <c-n>/<c-p> or <up>/<down>: Select next/previous item
-        -- <c-e>: Hide menu
-        -- <c-k>: Toggle signature help
-        --
-        -- See :h blink-cmp-config-keymap for defining your own keymap
-        preset = 'default',
+        -- 'Enter' confirma a seleção
+        ['<CR>'] = { 'accept', 'fallback' },
 
-        -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
-        --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
+        -- 'Tab' seleciona o próximo item e pula dentro do Snippet
+        ['<Tab>'] = { 'select_next', 'snippet_forward', 'fallback' },
+
+        -- 'Shift + Tab' volta para o item anterior ou volta no Snippet
+        ['<S-Tab>'] = { 'select_prev', 'snippet_backward', 'fallback' },
+
+        -- Atalhos extras úteis
+        ['<C-space>'] = { 'show', 'show_documentation', 'hide_documentation' },
+        ['<C-e>'] = { 'hide' },
       },
 
       appearance = {
-        -- 'mono' (default) for 'Nerd Font Mono' or 'normal' for 'Nerd Font'
-        -- Adjusts spacing to ensure icons are aligned
         nerd_font_variant = 'mono',
       },
 
       completion = {
-        -- By default, you may press `<c-space>` to show the documentation.
-        -- Optionally, set `auto_show = true` to show the documentation after a delay.
+        -- AQUI É O SEGREDO: O menu só aparece se NÃO for modo de comando (:)
+        -- Isso mata aquele erro vermelho do :cd
+        menu = {
+          auto_show = function(ctx)
+            return ctx.mode ~= 'cmdline'
+          end,
+        },
         documentation = { auto_show = false, auto_show_delay_ms = 500 },
       },
 
@@ -867,16 +858,9 @@ require('lazy').setup({
 
       snippets = { preset = 'luasnip' },
 
-      -- Blink.cmp includes an optional, recommended rust fuzzy matcher,
-      -- which automatically downloads a prebuilt binary when enabled.
-      --
-      -- By default, we use the Lua implementation instead, but you may enable
-      -- the rust implementation via `'prefer_rust_with_warning'`
-      --
-      -- See :h blink-cmp-config-fuzzy for more information
       fuzzy = { implementation = 'lua' },
 
-      -- Shows a signature help window while you type arguments for a function
+      -- Mostra os nomes das variáveis enquanto você preenche funções
       signature = { enabled = true },
     },
   },
@@ -946,10 +930,10 @@ require('lazy').setup({
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
-    main = 'nvim-treesitter.configs', -- Sets main module to use for opts
+    main = 'nvim-treesitter.config', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
+      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'python', 'vimdoc' },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
@@ -1019,9 +1003,9 @@ require('lazy').setup({
   --  Uncomment any of the lines below to enable them (you will need to restart nvim).
   --
   -- require 'kickstart.plugins.debug',
-  --require 'kickstart.plugins.indent_line',
+  require 'kickstart.plugins.indent_line',
   -- require 'kickstart.plugins.lint',
-  -- require 'kickstart.plugins.autopairs',
+  require 'kickstart.plugins.autopairs',
   require 'kickstart.plugins.neo-tree',
   -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
@@ -1064,17 +1048,32 @@ vim.keymap.set('n', '<Right>', 'gt', { desc = 'Próxima Aba' })
 vim.keymap.set('n', '<Left>', 'gT', { desc = 'Aba Anterior' })
 
 -- Atalho para Compilar e Rodar C99 (F5)
+-- Atalho Inteligente para Salvar, Compilar e Rodar (F5)
 vim.keymap.set('n', '<F5>', function()
   vim.cmd 'write'
-  local file = vim.fn.expand '%'
-  local out = vim.fn.expand '%:r'
-  local cmd = string.format('gcc -std=c99 -Wall %s -o %s && ./%s', file, out, out)
-  if vim.fn.has 'win32' == 1 then
-    cmd = string.format('gcc -std=c99 -Wall %s -o %s.exe && .\\%s.exe', file, out, out)
-  end
-  vim.cmd('split | term ' .. cmd)
-end, { desc = 'C99: Salvar, Compilar e Rodar' })
+  local file = vim.fn.expand '%' -- Nome do arquivo (ex: exercicio.py)
+  local out = vim.fn.expand '%:r' -- Nome sem extensão (ex: exercicio)
+  local ext = vim.fn.expand '%:e' -- Extensão (ex: py ou c)
+  local cmd = ''
 
+  if ext == 'c' then
+    -- Comando para C (com aspas para suportar espaços no nome da pasta)
+    if vim.fn.has 'win32' == 1 then
+      cmd = string.format('gcc -std=c99 -Wall "%s" -o "%s.exe" && ".\\%s.exe"', file, out, out)
+    else
+      cmd = string.format('gcc -std=c99 -Wall "%s" -o "%s" && "./%s"', file, out, out)
+    end
+  elseif ext == 'py' then
+    -- Comando para Python
+    cmd = string.format('python "%s"', file)
+  else
+    print('Extensão .' .. ext .. ' não configurada para o F5')
+    return
+  end
+
+  -- Abre o terminal em um split e roda o comando definido
+  vim.cmd('split | term ' .. cmd)
+end, { desc = 'F5: Salvar e Rodar (C ou Python)' })
 -- Salvar automaticamente ao perder o foco (Alt-Tab)
 vim.api.nvim_create_autocmd({ 'FocusLost', 'BufLeave' }, {
   pattern = { '*' },
