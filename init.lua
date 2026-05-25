@@ -12,10 +12,10 @@
 ========         ||                    ||   |-----|          ========
 ========         ||:Tutor              ||   |:::::|          ========
 ========         |'-..................-'|   |____o|          ========
-========         `"")----------------(""`   ___________      ========
-========        /::::::::::|  |::::::::::\  \ no mouse \     ========
-========       /:::========|  |==hjkl==:::\  \ required \    ========
-========      '""""""""""""'  '""""""""""""'  '""""""""""'   ========
+========         `"")----------------(""`   ___________          ========
+========        /::::::::::|  |::::::::::\  \ no mouse \        ========
+========       /:::========|  |==hjkl==:::\  \ required \        ========
+========      '""""""""""""'  '""""""""""""'  '""""""""""'        ========
 ========                                                     ========
 =====================================================================
 =====================================================================
@@ -92,6 +92,24 @@ vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = true
+
+-- =====================================================================
+-- CORREÇÃO DO SHELL: Forçar PowerShell Core ao invés do CMD no Windows
+-- =====================================================================
+if vim.fn.has 'win32' == 1 then
+  if vim.fn.executable 'pwsh' == 1 then
+    vim.o.shell = 'pwsh'
+  else
+    vim.o.shell = 'powershell'
+  end
+
+  vim.o.shellcmdflag = '-NoLogo -ExecutionPolicy RemoteSigned -Command [Console]::InputEncoding=[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;'
+  vim.o.shellredir = '2>&1 | Out-File -Encoding UTF8 %s; exit $LastExitCode'
+  vim.o.shellpipe = '2>&1 | Out-File -Encoding UTF8 %s; exit $LastExitCode'
+  vim.o.shellquote = ''
+  vim.o.shellxquote = ''
+end
+-- =====================================================================
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
@@ -532,9 +550,9 @@ require('lazy').setup({
       -- and elegantly composed help section, `:help lsp-vs-treesitter`
 
       --  This function gets run when an LSP attaches to a particular buffer.
-      --    That is to say, every time a new file is opened that is associated with
-      --    an lsp (for example, opening `main.rs` is associated with `rust_analyzer`) this
-      --    function will be executed to configure the current buffer
+      --     That is to say, every time a new file is opened that is associated with
+      --     an lsp (for example, opening `main.rs` is associated with `rust_analyzer`) this
+      --     function will be executed to configure the current buffer
       vim.api.nvim_create_autocmd('LspAttach', {
         group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
         callback = function(event)
@@ -930,7 +948,7 @@ require('lazy').setup({
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
-    main = 'nvim-treesitter.config', -- Sets main module to use for opts
+    main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
       ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'python', 'vimdoc' },
@@ -1074,11 +1092,13 @@ vim.keymap.set('n', '<F5>', function()
   -- Abre o terminal em um split e roda o comando definido
   vim.cmd('split | term ' .. cmd)
 end, { desc = 'F5: Salvar e Rodar (C ou Python)' })
+
 -- Salvar automaticamente ao perder o foco (Alt-Tab)
 vim.api.nvim_create_autocmd({ 'FocusLost', 'BufLeave' }, {
   pattern = { '*' },
   command = 'silent! wall',
 })
+
 -- [[ CONFIGURAÇÃO CLEAN E ELÁSTICA (SÓ RASTRO DE LUZ) ]]
 if vim.g.neovide then
   -- 1. FONTE E ZOOM
@@ -1107,5 +1127,6 @@ if vim.g.neovide then
   vim.g.neovide_floating_blur_amount_x = 2.0
   vim.g.neovide_floating_blur_amount_y = 2.0
 end
+
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
