@@ -1,0 +1,26 @@
+# Hook que roda toda vez que o prompt do PowerShell é renderizado
+function dev_prompt_hook {
+    # Alvo: Script de ativação do venv no diretório atual
+    $VenvScript = Join-Path (Get-Location) ".venv\Scripts\Activate.ps1"
+    
+    # Se o script existir E o venv ainda não estiver ativo no terminal atual
+    if (Test-Path $VenvScript) {
+        if (-not $env:VIRTUAL_ENV) {
+            Write-Host "`n[⚡ venv] Ambiente virtual detectado. Ativando..." -ForegroundColor Cyan
+            & $VenvScript
+        }
+    }
+}
+
+# Injeta a nossa checagem dentro da renderização do Prompt nativo
+function prompt {
+    dev_prompt_hook
+    
+    # Se o comando falhar fica vermelho escuro, se estiver tudo certo usa o Ciano do TokyoNight
+    $promptColor = if ($global:LastExitCode -ne $null -and $global:LastExitCode -ne 0) { "DarkRed" } else { "Cyan" }
+    
+    # Estética TokyoNight: printa o caminho com a cor do tema
+    Write-Host "PS " -NoNewline -ForegroundColor Gray
+    Write-Host (Get-Location) -NoNewline -ForegroundColor $promptColor
+    return " > "
+}
